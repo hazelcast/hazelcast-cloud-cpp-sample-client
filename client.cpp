@@ -28,8 +28,7 @@ int main(int argc, char **argv) {
         } catch (std::exception &e) {
             std::cout << "Put operation failed error:" << e.what() << std::endl;
         }
-        if (++iterationCount == 10){
-            iterationCount = 0;
+        if (++iterationCount % 10 == 0){
             std::cout << "Map size:" + std::to_string(map->size().get()) << std::endl;
         }
     }
