@@ -1,0 +1,8 @@
+[requires]
+hazelcast-cpp-client/4.1.0
+
+[options]
+hazelcast-cpp-client:with_openssl=True
+
+[generators]
+cmake
