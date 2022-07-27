@@ -6,6 +6,7 @@ void mapExample(hazelcast::client::hazelcast_client client);
 void nonStopMapExample(hazelcast::client::hazelcast_client client);
 int main(int argc, char **argv) {
     hazelcast::client::client_config config;
+    config.set_property("hazelcast.client.statistics.enabled", "true");
     config.set_cluster_name("YOUR_CLUSTER_NAME");
     auto &cloud_configuration = config.get_network_config().get_cloud_config();
     cloud_configuration.enabled = true;
