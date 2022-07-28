@@ -10,6 +10,7 @@
 
 void map_example(hazelcast::client::hazelcast_client client);
 void non_stop_map_example(hazelcast::client::hazelcast_client client);
+
 int main(int argc, char **argv) {
     hazelcast::client::client_config config;
     config.set_cluster_name("YOUR_CLUSTER_NAME");
@@ -45,7 +46,6 @@ hazelcast::client::hazelcast_json_value as_json(std::string country, std::string
 *
 * @param client - a Hazelcast client.
 */
-
 void map_example(hazelcast::client::hazelcast_client client) {
     auto cities = client.get_map("cities").get();
     cities->put<std::string, hazelcast::client::hazelcast_json_value>("1", as_json("United Kingdom", "London", 9540576)).get();
@@ -67,14 +67,13 @@ void map_example(hazelcast::client::hazelcast_client client) {
 *
 * @param client - a Hazelcast client.
 */
-
 void non_stop_map_example(hazelcast::client::hazelcast_client client) {
     std::cout << "Now the map named 'map' will be filled with random entries." << std::endl;
     std::cout << "--------------------" << std::endl;
     auto map = client.get_map("map").get();
     int iteration_counter = 0;
     while (true) {
-        int random_key = std::rand()%100000;
+        int random_key = std::rand() % 100000;
         map->put<std::string, std::string>("key-" + std::to_string(random_key), "value-" + std::to_string(random_key)).get();
         map->get<std::string, std::string>("key-" + std::to_string(std::rand() % 100000)).get();
         if (++iteration_counter == 10) {

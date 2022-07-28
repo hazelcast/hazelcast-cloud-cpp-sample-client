@@ -10,6 +10,7 @@
 
 void map_example(hazelcast::client::hazelcast_client client);
 void non_stop_map_example(hazelcast::client::hazelcast_client client);
+
 int main(int argc, char **argv) {
     hazelcast::client::client_config config;
     config.set_property("hazelcast.client.statistics.enabled", "true");
@@ -37,7 +38,6 @@ hazelcast::client::hazelcast_json_value as_json(std::string country, std::string
 *
 * @param client - a Hazelcast client.
 */
-
 void map_example(hazelcast::client::hazelcast_client client) {
     auto cities = client.get_map("cities").get();
     cities->put<std::string, hazelcast::client::hazelcast_json_value>("1", as_json("United Kingdom", "London", 9540576)).get();
@@ -58,7 +58,6 @@ void map_example(hazelcast::client::hazelcast_client client) {
 *
 * @param client - a Hazelcast client.
 */
-
 void non_stop_map_example(hazelcast::client::hazelcast_client client) {
     std::cout << "Now the map named 'map' will be filled with random entries." << std::endl;
     std::cout << "--------------------" << std::endl;
