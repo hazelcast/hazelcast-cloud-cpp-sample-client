@@ -20,7 +20,6 @@ int main(int argc, char **argv) {
     cloud_configuration.enabled = true;
     cloud_configuration.discovery_token = "YOUR_CLUSTER_DISCOVERY_TOKEN";
     boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv12);
-    ctx.set_verify_mode(boost::asio::ssl::verify_peer);
     ctx.load_verify_file("ca.pem");
     ctx.use_certificate_file("cert.pem", boost::asio::ssl::context::pem);
     ctx.set_password_callback([&] (std::size_t max_length, boost::asio::ssl::context::password_purpose purpose) {
