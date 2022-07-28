@@ -52,7 +52,7 @@ void nonStopMapExample(hazelcast::client::hazelcast_client client) {
     auto map = client.get_map("map").get();
     int iterationCounter = 0;
     while (true) {
-        int randomKey = std::rand()%100000;
+        int randomKey = std::rand() % 100000;
         map->put<std::string, std::string>("key-" + std::to_string(randomKey), "value-" + std::to_string(randomKey)).get();
         map->get<std::string, std::string>("key-" + std::to_string(std::rand()%100000)).get();
         if (++iterationCounter == 10) {
