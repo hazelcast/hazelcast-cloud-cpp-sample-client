@@ -2,9 +2,12 @@
 #include "model/City.h"
 #include "model/Country.h"
 
-// This is boilerplate application that configures client to connect Hazelcast
-// Cloud cluster.
-// See: https://docs.hazelcast.com/cloud/cpp-client
+/**
+* This is boilerplate application that configures client to connect Hazelcast
+* Cloud cluster.
+* <p>
+* See: <a href="https://docs.hazelcast.com/cloud/java-client">https://docs.hazelcast.com/cloud/java-client</a>
+*/
 
 void mapExample(hazelcast::client::hazelcast_client client);
 void nonStopMapExample(hazelcast::client::hazelcast_client client);
@@ -35,7 +38,11 @@ int main(int argc, char **argv) {
     client.shutdown();
 }
 
-// This example shows how to work with Hazelcast maps.
+/**
+* This example shows how to work with Hazelcast maps.
+*
+* @param client - a {@link HazelcastInstance} client.
+*/
 
 void mapExample(hazelcast::client::hazelcast_client client) {
     auto cities = client.get_map("cities").get();
@@ -52,8 +59,12 @@ void mapExample(hazelcast::client::hazelcast_client client) {
     std::cout << "--------------------" << std::endl;
 }
 
-// This example shows how to work with Hazelcast maps, where the map is
-// updated continuously.
+/**
+* This example shows how to work with Hazelcast maps, where the map is
+* updated continuously.
+*
+* @param client - a {@link HazelcastInstance} client.
+*/
 
 void nonStopMapExample(hazelcast::client::hazelcast_client client) {
     std::cout << "Now the map named 'map' will be filled with random entries." << std::endl;
