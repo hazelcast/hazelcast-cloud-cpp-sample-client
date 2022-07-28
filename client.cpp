@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 
     //non_stop_map_example(client);
 
-    client.shutdown();
+    client.shutdown().wait();
 }
 
 /**
