@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
     //non_stop_map_example(client);
 
-    client.shutdown().wait();
+    client.shutdown().get();
 }
 
 hazelcast::client::hazelcast_json_value as_json(std::string country, std::string city, int population) {
