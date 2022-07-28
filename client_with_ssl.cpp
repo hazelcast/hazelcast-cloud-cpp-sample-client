@@ -1,6 +1,5 @@
 #include <string>
 #include "model/city.h"
-#include "model/country.h"
 
 /**
 * This is boilerplate application that configures client to connect Hazelcast
