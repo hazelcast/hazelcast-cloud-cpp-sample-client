@@ -1,5 +1,5 @@
 #include <string>
-#include "model/city.h"
+#include <hazelcast/client/hazelcast_client.h>
 
 /**
  * This is boilerplate application that configures client to connect Hazelcast
@@ -28,6 +28,10 @@ int main(int argc, char **argv) {
     client.shutdown().wait();
 }
 
+hazelcast::client::hazelcast_json_value as_json(std::string country, std::string city, int population) {
+    return hazelcast::client::hazelcast_json_value("{\"country\":\"" + country + "\",\"city\":\"" + city + "\",\"population\":" +std::to_string(population)  +"}");
+}
+
 /**
 * This example shows how to work with Hazelcast maps.
 *
@@ -36,14 +40,14 @@ int main(int argc, char **argv) {
 
 void map_example(hazelcast::client::hazelcast_client client) {
     auto cities = client.get_map("cities").get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("1", city::as_json("United Kingdom", "London", 9540576)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("2", city::as_json("United Kingdom", "Manchester", 2770434)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("3", city::as_json("United States", "New York", 19223191)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("4", city::as_json("United States", "Los Angeles", 3985520)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("5", city::as_json("Turkey", "Ankara", 5309690)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("6", city::as_json("Turkey", "Istanbul", 15636243)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("7", city::as_json("Brazil", "Sao Paulo", 22429800)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("8", city::as_json("Brazil", "Rio de Janeiro", 13634274)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("1", as_json("United Kingdom", "London", 9540576)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("2", as_json("United Kingdom", "Manchester", 2770434)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("3", as_json("United States", "New York", 19223191)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("4", as_json("United States", "Los Angeles", 3985520)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("5", as_json("Turkey", "Ankara", 5309690)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("6", as_json("Turkey", "Istanbul", 15636243)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("7", as_json("Brazil", "Sao Paulo", 22429800)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("8", as_json("Brazil", "Rio de Janeiro", 13634274)).get();
     int map_size = cities->size().get();
     std::printf("'cities' map now contains %d entries.\n", map_size);
     std::cout << "--------------------" << std::endl;
