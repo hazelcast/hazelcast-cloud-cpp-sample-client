@@ -6,7 +6,7 @@
 * This is boilerplate application that configures client to connect Hazelcast
 * Cloud cluster.
 * <p>
-* See: <a href="https://docs.hazelcast.com/cloud/java-client">https://docs.hazelcast.com/cloud/java-client</a>
+* See: <a href="https://docs.hazelcast.com/cloud/cpp-client">https://docs.hazelcast.com/cloud/cpp-client</a>
 */
 
 void mapExample(hazelcast::client::hazelcast_client client);
