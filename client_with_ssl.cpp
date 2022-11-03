@@ -1,19 +1,25 @@
-#include <hazelcast/client/hazelcast_client.h>
 #include <string>
+#include <hazelcast/client/hazelcast_client.h>
+
+/**
+* This is boilerplate application that configures client to connect Hazelcast
+* Cloud cluster.
+* <p>
+* See: <a href="https://docs.hazelcast.com/cloud/cpp-client">https://docs.hazelcast.com/cloud/cpp-client</a>
+*/
+
+void map_example(hazelcast::client::hazelcast_client client);
+void non_stop_map_example(hazelcast::client::hazelcast_client client);
 
 int main(int argc, char **argv) {
     hazelcast::client::client_config config;
-    
     config.set_cluster_name("YOUR_CLUSTER_NAME");
     config.set_property(hazelcast::client::client_properties::CLOUD_URL_BASE, "YOUR_DISCOVERY_URL");
     config.set_property("hazelcast.client.statistics.enabled", "true");
-
     auto &cloud_configuration = config.get_network_config().get_cloud_config();
     cloud_configuration.enabled = true;
     cloud_configuration.discovery_token = "YOUR_CLUSTER_DISCOVERY_TOKEN";
-
     boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv12);
-    ctx.set_verify_mode(boost::asio::ssl::verify_peer);
     ctx.load_verify_file("ca.pem");
     ctx.use_certificate_file("cert.pem", boost::asio::ssl::context::pem);
     ctx.set_password_callback([&] (std::size_t max_length, boost::asio::ssl::context::password_purpose purpose) {
@@ -21,27 +27,58 @@ int main(int argc, char **argv) {
     });
     ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
     config.get_network_config().get_ssl_config().set_context(std::move(ctx));
-
-    auto hazelcastClient = hazelcast::new_client(std::move(config)).get();
-    auto map = hazelcastClient.get_map("map").get();
-    auto check = map->put<std::string, std::string>("key", "value").get();
-    map->clear().get();
+    auto client = hazelcast::new_client(std::move(config)).get();
     std::cout << "Connection Successful!" << std::endl;
-    std::cout << "Now, 'map' will be filled with random entries." << std::endl;
-    
-    int iterationCount = 0;
+
+    map_example(client);
+
+    //non_stop_map_example(client);
+
+    client.shutdown().get();
+}
+
+hazelcast::client::hazelcast_json_value as_json(std::string country, std::string city, int population) {
+    return hazelcast::client::hazelcast_json_value("{\"country\":\"" + country + "\",\"city\":\"" + city + "\",\"population\":" +std::to_string(population)  +"}");
+}
+
+/**
+* This example shows how to work with Hazelcast maps.
+*
+* @param client - a Hazelcast client.
+*/
+void map_example(hazelcast::client::hazelcast_client client) {
+    auto cities = client.get_map("cities").get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("1", as_json("United Kingdom", "London", 9540576)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("2", as_json("United Kingdom", "Manchester", 2770434)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("3", as_json("United States", "New York", 19223191)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("4", as_json("United States", "Los Angeles", 3985520)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("5", as_json("Turkey", "Ankara", 5309690)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("6", as_json("Turkey", "Istanbul", 15636243)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("7", as_json("Brazil", "Sao Paulo", 22429800)).get();
+    cities->put<std::string, hazelcast::client::hazelcast_json_value>("8", as_json("Brazil", "Rio de Janeiro", 13634274)).get();
+    int map_size = cities->size().get();
+    std::printf("'cities' map now contains %d entries.\n", map_size);
+    std::cout << "--------------------" << std::endl;
+}
+
+/**
+* This example shows how to work with Hazelcast maps, where the map is
+* updated continuously.
+*
+* @param client - a Hazelcast client.
+*/
+void non_stop_map_example(hazelcast::client::hazelcast_client client) {
+    std::cout << "Now the map named 'map' will be filled with random entries." << std::endl;
+    std::cout << "--------------------" << std::endl;
+    auto map = client.get_map("map").get();
+    int iteration_counter = 0;
     while (true) {
-        int randomKey = rand();
-        std::string randomKeyString = std::to_string(randomKey);
-        try {
-            map->put<std::string, std::string>("key" + randomKeyString, "value" + randomKeyString).get();
-        } catch (std::exception &e) {
-            std::cout << "Put operation failed error:" << e.what() << std::endl;
-        }
-        if (++iterationCount % 10 == 0){
-            std::cout << "Map size:" + std::to_string(map->size().get()) << std::endl;
+        int random_key = std::rand() % 100000;
+        map->put<std::string, std::string>("key-" + std::to_string(random_key), "value-" + std::to_string(random_key)).get();
+        map->get<std::string, std::string>("key-" + std::to_string(std::rand() % 100000)).get();
+        if (++iteration_counter == 10) {
+            iteration_counter = 0;
+            std::cout << "Current map size: " + std::to_string(map->size().get()) << std::endl;
         }
     }
-
-    return 0;
 }
