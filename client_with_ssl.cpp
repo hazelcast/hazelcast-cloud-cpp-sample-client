@@ -1,84 +1,176 @@
+// Copyright (c) 2008-2023, Hazelcast, Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <string>
 #include <hazelcast/client/hazelcast_client.h>
 
 /**
-* This is boilerplate application that configures client to connect Hazelcast
-* Cloud cluster.
-* <p>
-* See: <a href="https://docs.hazelcast.com/cloud/cpp-client">https://docs.hazelcast.com/cloud/cpp-client</a>
+* A sample application that configures a client to connect to an Hazelcast Viridian cluster
+* over TLS, and to then insert and fetch data with SQL, thus testing that the connection to
+* the Hazelcast Viridian cluster is successful.
+*
+* See: https://docs.hazelcast.com/cloud/get-started
 */
 
 void map_example(hazelcast::client::hazelcast_client client);
 void non_stop_map_example(hazelcast::client::hazelcast_client client);
 
-int main(int argc, char **argv) {
-    hazelcast::client::client_config config;
-    config.set_cluster_name("YOUR_CLUSTER_NAME");
-    config.set_property(hazelcast::client::client_properties::CLOUD_URL_BASE, "YOUR_DISCOVERY_URL");
-    config.set_property("hazelcast.client.statistics.enabled", "true");
-    auto &cloud_configuration = config.get_network_config().get_cloud_config();
-    cloud_configuration.enabled = true;
-    cloud_configuration.discovery_token = "YOUR_CLUSTER_DISCOVERY_TOKEN";
-    boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv12);
-    ctx.load_verify_file("ca.pem");
-    ctx.use_certificate_file("cert.pem", boost::asio::ssl::context::pem);
-    ctx.set_password_callback([&] (std::size_t max_length, boost::asio::ssl::context::password_purpose purpose) {
-        return "YOUR_SSL_PASSWORD";
-    });
-    ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
-    config.get_network_config().get_ssl_config().set_context(std::move(ctx));
-    auto client = hazelcast::new_client(std::move(config)).get();
-    std::cout << "Connection Successful!" << std::endl;
+int main(int argc, char** argv) {
+	hazelcast::client::client_config config;
 
-    map_example(client);
+	config.set_cluster_name("YOUR_CLUSTER_NAME");
+	config.set_property(hazelcast::client::client_properties::CLOUD_URL_BASE, "YOUR_DISCOVERY_URL");
+	config.set_property("hazelcast.client.statistics.enabled", "true");
 
-    //non_stop_map_example(client);
+	auto& cloud_configuration = config.get_network_config().get_cloud_config();
+	cloud_configuration.enabled = true;
+	cloud_configuration.discovery_token = "YOUR_CLUSTER_DISCOVERY_TOKEN";
 
-    client.shutdown().get();
+	boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv12);
+	ctx.load_verify_file("ca.pem");
+	ctx.use_certificate_file("cert.pem", boost::asio::ssl::context::pem);
+	ctx.set_password_callback([&](std::size_t max_length, boost::asio::ssl::context::password_purpose purpose) {
+		return "YOUR_SSL_PASSWORD";
+		});
+	ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+	config.get_network_config().get_ssl_config().set_context(std::move(ctx));
+
+	auto client = hazelcast::new_client(std::move(config)).get();
+	std::cout << "Connection Successful!" << std::endl;
+
+	create_mapping(client);
+	insert_cities(client);
+
+
+	client.shutdown().get();
 }
 
-hazelcast::client::hazelcast_json_value as_json(std::string country, std::string city, int population) {
-    return hazelcast::client::hazelcast_json_value("{\"country\":\"" + country + "\",\"city\":\"" + city + "\",\"population\":" +std::to_string(population)  +"}");
+void create_mapping(hazelcast::client::hazelcast_client client) {
+	// Mapping is required for your distributed map to be queried over SQL.
+	// See: https://docs.hazelcast.com/hazelcast/latest/sql/mapping-to-maps
+
+	std::count << "\nCreating the mapping...";
+
+	auto sql = client.get_sql();
+
+	auto result = sql
+		.execute(R"(CREATE OR REPLACE MAPPING 
+                                    cities (
+                                        __key INT,                                        
+                                        country VARCHAR,
+                                        city VARCHAR,
+                                        population INT) TYPE IMAP
+                                    OPTIONS ( 
+                                        'keyFormat' = 'int',
+                                        'valueFormat' = 'compact',
+                                        'valueCompactTypeName' = 'city'))").get();
+
+	std::count << "OK.";
 }
 
-/**
-* This example shows how to work with Hazelcast maps.
-*
-* @param client - a Hazelcast client.
-*/
-void map_example(hazelcast::client::hazelcast_client client) {
-    auto cities = client.get_map("cities").get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("1", as_json("United Kingdom", "London", 9540576)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("2", as_json("United Kingdom", "Manchester", 2770434)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("3", as_json("United States", "New York", 19223191)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("4", as_json("United States", "Los Angeles", 3985520)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("5", as_json("Turkey", "Ankara", 5309690)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("6", as_json("Turkey", "Istanbul", 15636243)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("7", as_json("Brazil", "Sao Paulo", 22429800)).get();
-    cities->put<std::string, hazelcast::client::hazelcast_json_value>("8", as_json("Brazil", "Rio de Janeiro", 13634274)).get();
-    int map_size = cities->size().get();
-    std::printf("'cities' map now contains %d entries.\n", map_size);
-    std::cout << "--------------------" << std::endl;
+
+void insert_cities(hazelcast::client::hazelcast_client client) {
+	std::cout << std::endl << "Inserting cities into 'cities' map...";
+
+	auto sql = client.get_sql();
+	// Create mapping for the integers. This needs to be done only once per map.
+	auto result = sql
+		.execute(R"(INSERT INTO cities 
+                    (__key, city, country, population) VALUES
+                    (1, 'London', 'United Kingdom', 9540576),
+                    (2, 'Manchester', 'United Kingdom', 2770434),
+                    (3, 'New York', 'United States', 19223191),
+                    (4, 'Los Angeles', 'United States', 3985520),
+                    (5, 'Istanbul', 'Türkiye', 15636243),
+                    (6, 'Ankara', 'Türkiye', 5309690),
+                    (7, 'Sao Paulo ', 'Brazil', 22429800))").get();
+
+	std::count << "OK.";
+
+	// Let's also add a city as object.
+	std::cout << std::endl << "Putting a city into 'cities' map...";
+	auto map = client.get_map("cities").get();
+	map->put(8, CityDTO{ "Rio de Janeiro", "Brazil", 13634274 })
+		std::cout << "OK.";
 }
 
-/**
-* This example shows how to work with Hazelcast maps, where the map is
-* updated continuously.
-*
-* @param client - a Hazelcast client.
-*/
-void non_stop_map_example(hazelcast::client::hazelcast_client client) {
-    std::cout << "Now the map named 'map' will be filled with random entries." << std::endl;
-    std::cout << "--------------------" << std::endl;
-    auto map = client.get_map("map").get();
-    int iteration_counter = 0;
-    while (true) {
-        int random_key = std::rand() % 100000;
-        map->put<std::string, std::string>("key-" + std::to_string(random_key), "value-" + std::to_string(random_key)).get();
-        map->get<std::string, std::string>("key-" + std::to_string(std::rand() % 100000)).get();
-        if (++iteration_counter == 10) {
-            iteration_counter = 0;
-            std::cout << "Current map size: " + std::to_string(map->size().get()) << std::endl;
-        }
-    }
+void fetch_cities(hazelcast::client::hazelcast_client client) {
+	std::cout << std::endl << "Fetching cities via SQL...";
+
+	auto result = client.get_sql().execute("SELECT __key, this FROM cities").get();
+
+	std::cout << "OK";
+	std::cout << "\n--Results of 'SELECT __key, this FROM cities'";
+	std::printf("| %4s | %20s | %20s | %15s |\n", "id", "country", "city", "population");
+
+	for (auto itr = result->iterator(); itr.has_next();) {
+		auto page = itr.next().get();
+
+		for (auto const& row : page->rows()) {
+
+			auto id = row.get_object<int32_t>("__key");
+			auto city = row.get_object<CityDTO>("this");
+			std::printf("| %4d | %20s | %20s | %15d |\n", id, city.Country, city.cityName, city.population);			
+		}
+	}
+
+	std::cout << "\n!! Hint !! You can execute your SQL queries on your Viridian cluster over the management center. \n 1. Go to 'Management Center' of your Hazelcast Viridian cluster. \n 2. Open the 'SQL Browser'. \n 3. Try to execute 'SELECT * FROM cities'.\n";
 }
+struct CityDTO {
+	string cityName;
+	string country;
+	int population;
+};
+
+// CityDTO serializer
+namespace hazelcast {
+	namespace client {
+		namespace serialization {
+
+			template<>
+			struct city_serializer<CityDTO> : compact::compact_serializer
+			{
+				static void write(const CityDTO& object, compact::compact_writer& out)
+				{
+					out.write_int32("population", object.population);
+					out.write_string("city", object.cityName);
+					out.write_string("country", object.country);
+				}
+
+				static CityDTO read(compact::compact_reader& in)
+				{
+					CityDTO c;
+
+					c.population = in.read_int32("population");
+					boost::optional<std::string> city = in.read_string("city");
+
+					if (city) {
+						c.cityName = *city;
+					}
+
+					boost::optional<std::string> country = in.read_string("country");
+
+					if (country) {
+						c.country = *country;
+					}
+
+					return c;
+				}
+
+				static std::string type_name() { return "city"; }
+			};
+
+		} // namespace serialization
+	} // namespace client
+} // namespace hazelcast
