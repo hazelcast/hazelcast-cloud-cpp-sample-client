@@ -94,15 +94,24 @@ main(int argc, char** argv)
     cloud_configuration.discovery_token = "YOUR_CLUSTER_DISCOVERY_TOKEN";
 
     boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv12);
-    ctx.load_verify_file("ca.pem");
-    ctx.use_certificate_file("cert.pem", boost::asio::ssl::context::pem);
-    ctx.set_password_callback(
-      [&](std::size_t max_length,
-          boost::asio::ssl::context::password_purpose purpose) {
-          return "YOUR_SSL_PASSWORD";
-      });
-    ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+
+    try {
+        ctx.load_verify_file("ca.pem");
+        ctx.use_certificate_file("cert.pem", boost::asio::ssl::context::pem);
+        ctx.set_password_callback(
+          [&](std::size_t max_length,
+              boost::asio::ssl::context::password_purpose purpose) {
+              return "YOUR_SSL_PASSWORD";
+          });
+        ctx.use_private_key_file("key.pem", boost::asio::ssl::context::pem);
+    } catch (std::exception& e) {
+        std::cerr << "You should copy ca.pem, cert.pem and key.pem files to "
+                     "the working directory, exception cause "
+                  << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
     config.get_network_config().get_ssl_config().set_context(std::move(ctx));
+    config.get_logger_config().level(hazelcast::logger::level::off);
 
     auto client = hazelcast::new_client(std::move(config)).get();
     std::cout << "Connection Successful!" << std::endl;
@@ -143,23 +152,30 @@ create_mapping(hazelcast::client::hazelcast_client client)
 void
 insert_cities(hazelcast::client::hazelcast_client client)
 {
-    std::cout << std::endl << "Inserting cities into 'cities' map...";
+    std::cout << "Inserting cities into 'cities' map..." << std::endl;
 
     auto sql = client.get_sql();
-    // Create mapping for the integers. This needs to be done only once per map.
-    auto result = sql
-                    .execute(R"(INSERT INTO cities 
+
+    try {
+        // Create mapping for the integers. This needs to be done only once per
+        // map.
+        auto result = sql
+                        .execute(R"(INSERT INTO cities 
                     (__key, city, country, population) VALUES
                     (1, 'London', 'United Kingdom', 9540576),
                     (2, 'Manchester', 'United Kingdom', 2770434),
                     (3, 'New York', 'United States', 19223191),
                     (4, 'Los Angeles', 'United States', 3985520),
-                    (5, 'Istanbul', 'Türkiye', 15636243),
-                    (6, 'Ankara', 'Türkiye', 5309690),
+                    (5, 'Istanbul', 'Turkey', 15636243),
+                    (6, 'Ankara', 'Turkey', 5309690),
                     (7, 'Sao Paulo ', 'Brazil', 22429800))")
-                    .get();
+                        .get();
 
-    std::cout << "OK." << std::endl;
+        std::cout << "OK." << std::endl;
+    } catch (hazelcast::client::exception::iexception& e) {
+        // don't panic for duplicated keys.
+        std::cerr << "FAILED, duplicated keys " << e.what() << std::endl;
+    }
 
     // Let's also add a city as object.
     std::cout << "Putting a city into 'cities' map..." << std::endl;
@@ -176,11 +192,14 @@ fetch_cities(hazelcast::client::hazelcast_client client)
     auto result =
       client.get_sql().execute("SELECT __key, this FROM cities").get();
 
-    std::cout << "OK" << std::endl;
+    std::cout << "OK." << std::endl;
     std::cout << "--Results of 'SELECT __key, this FROM cities'" << std::endl;
 
-    std::printf(
-      "| %4s | %20s | %20s | %15s |\n", "id", "country", "city", "population");
+    std::printf("| %-4s | %-20s | %-20s | %-15s |\n",
+                "id",
+                "country",
+                "city",
+                "population");
 
     for (auto itr = result->iterator(); itr.has_next();) {
         auto page = itr.next().get();
@@ -189,7 +208,7 @@ fetch_cities(hazelcast::client::hazelcast_client client)
 
             auto id = row.get_object<int32_t>("__key");
             auto city = row.get_object<CityDTO>("this");
-            std::printf("| %4d | %20s | %20s | %15d |\n",
+            std::printf("| %-4d | %-20s | %-20s | %-15d |\n",
                         *id,
                         city->country.c_str(),
                         city->cityName.c_str(),
