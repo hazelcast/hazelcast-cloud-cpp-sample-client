@@ -150,13 +150,13 @@ insert_cities(hazelcast::client::hazelcast_client client)
     auto result = sql
                     .execute(R"(INSERT INTO cities 
                     (__key, city, country, population) VALUES
-                    (111, 'London', 'United Kingdom', 9540576),
-                    (211, 'Manchester', 'United Kingdom', 2770434),
-                    (311, 'New York', 'United States', 19223191),
-                    (411, 'Los Angeles', 'United States', 3985520),
-                    (511, 'Istanbul', 'Türkiye', 15636243),
-                    (611, 'Ankara', 'Türkiye', 5309690),
-                    (711, 'Sao Paulo ', 'Brazil', 22429800))")
+                    (1, 'London', 'United Kingdom', 9540576),
+                    (2, 'Manchester', 'United Kingdom', 2770434),
+                    (3, 'New York', 'United States', 19223191),
+                    (4, 'Los Angeles', 'United States', 3985520),
+                    (5, 'Istanbul', 'Türkiye', 15636243),
+                    (6, 'Ankara', 'Türkiye', 5309690),
+                    (7, 'Sao Paulo ', 'Brazil', 22429800))")
                     .get();
 
     std::cout << "OK." << std::endl;
