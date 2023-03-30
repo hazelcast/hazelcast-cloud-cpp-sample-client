@@ -110,8 +110,7 @@ main(int argc, char** argv)
                   << e.what() << std::endl;
         exit(EXIT_FAILURE);
     }
-    config.get_network_config().get_ssl_config().set_context(std::move(ctx));
-    config.get_logger_config().level(hazelcast::logger::level::info);
+    config.get_network_config().get_ssl_config().set_context(std::move(ctx));    
 
     auto client = hazelcast::new_client(std::move(config)).get();
     std::cout << "Connection Successful!" << std::endl;
